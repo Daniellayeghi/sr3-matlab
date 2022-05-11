@@ -9,8 +9,8 @@ v = [];
 xs = [];
 sj_c = [];
 running_cost = @(x, u)(quad_cost(x(1)) + quad_cost(x(2)) + quad_cost(u^2));
-
-for i = 1:100
+jt = @(x)(2*sqrt(3)*x(:, 1) + 2q
+for i = 1:5
     x_0 = [rand; 0];
     [t, x] = ode45(@point_mass, t, x_0);
     xs = [xs; x];
