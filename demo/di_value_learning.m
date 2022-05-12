@@ -1,4 +1,5 @@
 %% ODE for double integrator
+addpath("../src/");
 clear all;
 close all;
 npos = 1;
@@ -9,7 +10,6 @@ v = [];
 xs = [];
 sj_c = [];
 running_cost = @(x, u)(quad_cost(x(1)) + quad_cost(x(2)) + quad_cost(u^2));
-jt = @(x)(2*sqrt(3)*x(:, 1) + 2q
 for i = 1:5
     x_0 = [rand; 0];
     [t, x] = ode45(@point_mass, t, x_0);
@@ -33,7 +33,7 @@ A = build_basis_lib(xs, basis_funcs);
 %% Computes weights with SR3
 lam1 = 0.01; % good for l_1 regularizer
 lam0 = 0.004; % good for l_0 regularizer
-[x0, w0] = sr3(A, v, 'mode', '0', 'lam',lam0,'ptf',0);
+[x0, w0] = sr3(A, v, 'mode', '1', 'lam',lam0,'ptf',0);
 w = [0, 0, sqrt(3), sqrt(3), 2];
 err = norm((A * w0 - v).^2);
 
@@ -51,7 +51,6 @@ title("Ground Truth Results");
 
 
 %% Function Defs
-
 function A = build_basis_lib(x, basis_f)
     A = [];
     [r, c] = size(basis_f);
