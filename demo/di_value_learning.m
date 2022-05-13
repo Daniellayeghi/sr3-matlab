@@ -10,7 +10,7 @@ v = [];
 xs = [];
 sj_c = [];
 running_cost = @(x, u)(quad_cost(x(1)) + quad_cost(x(2)) + quad_cost(u^2));
-for i = 1:5
+for i = 1:19
     x_0 = [rand; 0];
     [t, x] = ode45(@point_mass, t, x_0);
     xs = [xs; x];
@@ -22,6 +22,9 @@ for i = 1:5
     temp = remove_mid_elems(temp, 0);
     sj_c = [sj_c; temp];
     v = [v; j];
+    figure(1);
+    hold on;
+    plot3(x(:, 1), x(:,2), j);
 end
 
 [v, idx] = sortrows(v, 1);
@@ -36,6 +39,7 @@ lam0 = 0.004; % good for l_0 regularizer
 [x0, w0] = sr3(A, v, 'mode', '1', 'lam',lam0,'ptf',0);
 w = [0, 0, sqrt(3), sqrt(3), 2];
 err = norm((A * w0 - v).^2);
+csvwrite("temp_v.csv", v);
 
 figure();
 plot(A * w0);
@@ -60,7 +64,6 @@ function A = build_basis_lib(x, basis_f)
         A = [A, f(x)];
     end
 end
-
 
 function xd = point_mass(t, x)
     u = ctrl_cb(x);
