@@ -9,24 +9,28 @@ u = 0;
 v = [];
 xs = [];
 sj_c = [];
-running_cost = @(x, u)(quad_cost(x(1)) + quad_cost(x(2)) + quad_cost(u^2));
-for i = 1:19
+global ref; ref = [0.5; 0];
+running_cost = @(x, u, ref)(quad_cost(x(1), ref(1)) + quad_cost(x(2), ref(1)) + quad_cost(u, ref(1)));
+for i = 1:100
     x_0 = [rand; 0];
+    ref = [rand; 0];
     [t, x] = ode45(@point_mass, t, x_0);
-    xs = [xs; x];
+    xs = [xs, x];
     u1 = arrayfun(@(xi) -(xi(1)), x(:, 1));
     u2 = arrayfun(@(xi) -(sqrt(3) * x(2)), x(:, 2));
-    u = u1 + u2;
-    j = compute_cst2go(x);
+    u = u1 + u2 + ref(1);
+    j = compute_cst2go(x, ref(1));
     temp = [x, j];
     temp = remove_mid_elems(temp, 0);
-    sj_c = [sj_c; temp];
-    v = [v; j];
+    sj_c = [sj_c, temp];
+    v = [v, j];
     figure(1);
     hold on;
     plot3(x(:, 1), x(:,2), j);
 end
 
+
+v_sparse = remove_mid_elems(v, 3);
 [v, idx] = sortrows(v, 1);
 xs = xs(idx, :);
 
@@ -53,7 +57,6 @@ hold on;
 plot(v);
 title("Ground Truth Results");
 
-
 %% Function Defs
 function A = build_basis_lib(x, basis_f)
     A = [];
@@ -66,23 +69,24 @@ function A = build_basis_lib(x, basis_f)
 end
 
 function xd = point_mass(t, x)
-    u = ctrl_cb(x);
+    global ref;
+    u = ctrl_cb(x, ref(1));
     xd = [x(2); u];
 end
 
-function u = ctrl_cb(x)
-    u = -(x(1) + sqrt(3) * x(2));
+function u = ctrl_cb(x, ref)
+    u = -(x(1) + sqrt(3) * x(2) - ref);
 end
 
-function cst = quad_cost(x)
-    cst = x^2;
+function cst = quad_cost(x, ref)
+    cst = (ref-x)^2;
 end
 
-function v = compute_values(x, u)
+function v = compute_values(x, u, ref)
     quad_cost = @(x)(x^2);
-    pos_c = arrayfun(@quad_cost, x(:, 1));
-    vel_c = arrayfun(@quad_cost, x(:, 2));
-    ctr_c = arrayfun(@quad_cost, u(:, 1));
+    pos_c = arrayfun(@quad_cost, x(:, 1), ref);
+    vel_c = arrayfun(@quad_cost, x(:, 2), ref);
+    ctr_c = arrayfun(@quad_cost, u(:, 1), ref);
     
     v= [];
     
@@ -92,9 +96,8 @@ function v = compute_values(x, u)
     end
 end
 
-
-function cst2go = compute_cst2go(x)
-    J = @(x)(sqrt(3)*x(1)^2 + 2*x(1)*x(2) + sqrt(3)*x(2)^2);
+function cst2go = compute_cst2go(x, ref)
+    J = @(x)sqrt(3)*(ref - x(1))^2  + 2*x(2)*(ref - x(1)) + sqrt(3)*x(2)^2;
     cst2go = [];
     for i = 1:length(x)
         xi = x(i, :);
