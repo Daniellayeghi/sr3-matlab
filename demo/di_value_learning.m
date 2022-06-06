@@ -3,41 +3,39 @@ addpath("../src/");
 clear all;
 close all;
 npos = 1;
-t = 0:0.01:10;
+t = 0:0.04:10;
 x_0 = [1; 0];
 u = 0;
 v = [];
 xs = [];
 sj_c = [];
+conds = [];
 global ref; ref = [0.5; 0];
 running_cost = @(x, u, ref)(quad_cost(x(1), ref(1)) + quad_cost(x(2), ref(1)) + quad_cost(u, ref(1)));
-for i = 1:100
-    x_0 = [rand; 0];
-    ref = [rand; 0];
+for i = 1:1
+    x_0 = [0.7; 0];
+    ref = [-0.7; 0];
     [t, x] = ode45(@point_mass, t, x_0);
-    xs = [xs, x];
     u1 = arrayfun(@(xi) -(xi(1)), x(:, 1));
     u2 = arrayfun(@(xi) -(sqrt(3) * x(2)), x(:, 2));
     u = u1 + u2 + ref(1);
     j = compute_cst2go(x, ref(1));
-    temp = [x, j];
-    temp = remove_mid_elems(temp, 0);
-    sj_c = [sj_c, temp];
     v = [v, j];
+    xs = [xs, [x(:, 1); x(:, 2)]];
+    conds = [conds, [x_0; ref]];
     figure(1);
     hold on;
     plot3(x(:, 1), x(:,2), j);
 end
 
-
-v_sparse = remove_mid_elems(v, 3);
-[v, idx] = sortrows(v, 1);
-xs = xs(idx, :);
-
-basis_funcs = {@(x)(x); @(x)(x.^2); @(x)(x(:,1:1) .* x(:, 1+1:end))};
-A = build_basis_lib(xs, basis_funcs);
+%% Save Data
+hp_csvwrite(xs, "di_states.csv");
+hp_csvwrite(v, "di_values.csv");
+hp_csvwrite(conds, "di_conds.csv");
 
 %% Computes weights with SR3
+basis_funcs = {@(x)(x); @(x)(x.^2); @(x)(x(:,1:1) .* x(:, 1+1:end))};
+A = build_basis_lib(xs, basis_funcs);
 lam1 = 0.01; % good for l_1 regularizer
 lam0 = 0.004; % good for l_0 regularizer
 [x0, w0] = sr3(A, v, 'mode', '1', 'lam',lam0,'ptf',0);
